@@ -98,7 +98,7 @@ const originItems = [
     label: h(
       "a",
       {
-        href: "https://github.com/11smallwhite/public_zhaoPicture_backed/tree/20251125",
+        href: "https://github.com/11smallwhite/zhao-picture",
         target: "_blank",
       },
       "开发者的github"
