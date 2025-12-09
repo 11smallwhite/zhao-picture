@@ -14,6 +14,7 @@ import SpaceDetailPage from "@/pages/space/SpaceDetailPage.vue";
 import SpaceAnalyPage from "@/components/SpaceAnalyPage.vue";
 import UserDetailPage from "@/pages/user/UserDetailPage.vue";
 import TeamSpacePage from "@/pages/space/TeamSpacePage.vue";
+import UndevelopedPage from "@/pages/space/UndevelopedPage.vue";
 
 const routes: Array<RouteRecordRaw >  = [
   {
@@ -95,6 +96,11 @@ const routes: Array<RouteRecordRaw >  = [
     path: '/team_space',
     name: '团队空间',
     component: TeamSpacePage,
+  },
+  {
+    path: '/undeveloped',
+    name: '功能待开发',
+    component: UndevelopedPage,
   }
 ]
 

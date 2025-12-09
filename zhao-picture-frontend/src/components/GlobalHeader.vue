@@ -11,13 +11,60 @@
 
     <a-col flex="auto">
       <div id="globalHeader">
+        <!-- 使用 overflowedIndicator 插槽来避免菜单折叠 -->
         <a-menu
           v-model:selectedKeys="current"
           mode="horizontal"
-          :items="items"
           @click="doMenuClick"
           class="nav-menu"
-        />
+          :selectable="true"
+        >
+          <a-menu-item key="/">
+            <HomeOutlined />
+            公共图库
+          </a-menu-item>
+          
+          <a-menu-item key="/team_space">
+            <UsergroupAddOutlined />
+            团队空间
+          </a-menu-item>
+          
+          <!-- 管理员菜单项 -->
+          <template v-if="showAdminMenus">
+            <a-menu-item key="/admin/userManage">
+              <SettingOutlined />
+              用户管理
+            </a-menu-item>
+            
+            <a-menu-item key="/add_picture">
+              <PlusCircleOutlined />
+              创建图片
+            </a-menu-item>
+            
+            <a-menu-item key="/admin/pictureManage">
+              <PictureOutlined />
+              图片管理
+            </a-menu-item>
+            
+            <a-menu-item key="/admin/spaceManage">
+              <DatabaseOutlined />
+              空间管理
+            </a-menu-item>
+          </template>
+          
+          <!-- 普通用户也显示创建图片菜单 -->
+          <template v-else>
+            <a-menu-item key="/add_picture">
+              <PlusCircleOutlined />
+              创建图片
+            </a-menu-item>
+          </template>
+          
+          <a-menu-item key="github">
+            <GithubOutlined />
+            开发者GitHub
+          </a-menu-item>
+        </a-menu>
       </div>
     </a-col>
 
@@ -72,84 +119,48 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, h, ref } from "vue";
-import { HomeOutlined, UserOutlined, InfoCircleOutlined, LogoutOutlined, UsergroupAddOutlined, PlusCircleOutlined, GithubOutlined } from "@ant-design/icons-vue";
-import { MenuProps, message } from "ant-design-vue";
+import { ref, computed, onMounted } from "vue";
+import { 
+  HomeOutlined, 
+  UserOutlined, 
+  InfoCircleOutlined, 
+  LogoutOutlined, 
+  UsergroupAddOutlined, 
+  PlusCircleOutlined, 
+  GithubOutlined,
+  SettingOutlined,
+  PictureOutlined,
+  DatabaseOutlined
+} from "@ant-design/icons-vue";
+import { message } from "ant-design-vue";
 import { useRouter } from "vue-router";
 
 import { useLoginUserStore } from "@/stores/user.ts";
 import { userLogoutUsingPost } from "@/api/userController.ts";
 const loginUserStores = useLoginUserStore();
-loginUserStores.fetchLoginUser();
 
-// 菜单列表
-const originItems = [
-  {
-    key: "/",
-    icon: () => h(HomeOutlined),
-    label: "公共图库",
-    title: "公共图库",
-  },
-  {
-    key: "/team_space",
-    icon: () => h(UsergroupAddOutlined),
-    label: "团队空间",
-    title: "团队空间",
-  },
-  {
-    key: "/admin/userManage",
-    label: "用户管理",
-    title: "用户管理",
-  },
-  {
-    key: "/add_picture",
-    icon: () => h(PlusCircleOutlined),
-    label: "创建图片",
-    title: "创建图片",
-  },
-  {
-    key: "/admin/pictureManage",
-    label: "图片管理",
-    title: "图片管理",
-  },
-  {
-    key: "/admin/spaceManage",
-    label: "空间管理",
-    title: "空间管理",
-  },
-  {
-    key: "",
-    icon: () => h(GithubOutlined),
-    label: h(
-      "a",
-      {
-        href: "https://github.com/11smallwhite/public_zhaoPicture_backed/tree/20251125",
-        target: "_blank",
-      },
-      "开发者GitHub"
-    ),
-    title: "开发者的github",
-  },
-];
+// 页面加载时获取用户信息
+onMounted(() => {
+  if (!loginUserStores.loginUser.id) {
+    loginUserStores.fetchLoginUser();
+  }
+});
 
-// 过滤菜单项
-const filterMenus = (menus = [] as MenuProps["items"]) => {
-  return menus?.filter((menu) => {
-    if (menu.key.startsWith("/admin")) {
-      const loginUser = loginUserStores.loginUser;
-      if (!loginUser || loginUser.userType !== 1) {
-        return false;
-      }
-    }
-    return true;
-  });
-};
-
-// 展示在菜单的路由数组
-const items = computed<MenuProps["items"]>(() => filterMenus(originItems));
+// 判断是否显示管理员菜单
+const showAdminMenus = computed(() => {
+  const loginUser = loginUserStores.loginUser;
+  return loginUser && loginUser.userType === 1;
+});
 
 const router = useRouter();
-const doMenuClick = ({ key }) => {
+
+const doMenuClick = ({ key }: { key: string }) => {
+  // GitHub链接特殊处理
+  if (key === "github") {
+    window.open("https://github.com/11smallwhite/public_zhaoPicture_backed/tree/20251125", "_blank");
+    return;
+  }
+  
   router.push({
     path: key,
   });
@@ -157,8 +168,9 @@ const doMenuClick = ({ key }) => {
 
 // 当前选中菜单
 const current = ref<string[]>(["/"]);
+
 // 监听路由变化，更新当前选中菜单
-router.afterEach((to, from, next) => {
+router.afterEach((to, from) => {
   current.value = [to.path];
 });
 
@@ -167,6 +179,8 @@ const doLogout = async () => {
   if (res.data.code === 0) {
     loginUserStores.setLoginUser({
       userName: "未登录",
+      id: "", // 重置用户ID
+      userType: 0
     });
     message.success("退出登录成功");
     await router.push({
@@ -184,6 +198,7 @@ const doLogout = async () => {
   display: flex;
   align-items: center;
   height: 100%;
+  width: 100%;
 }
 
 .title-bar {
@@ -213,6 +228,27 @@ const doLogout = async () => {
   border: none !important;
   background: transparent !important;
   line-height: 48px;
+  white-space: nowrap;
+  width: 100%;
+}
+
+.nav-menu :deep(.ant-menu-item) {
+  display: inline-block !important;
+  vertical-align: top;
+  border-bottom: 2px solid transparent;
+}
+
+.nav-menu :deep(.ant-menu-item-selected) {
+  border-bottom: 2px solid #645bff;
+}
+
+.nav-menu :deep(.ant-menu-submenu) {
+  display: inline-block !important;
+  vertical-align: top;
+}
+
+.nav-menu :deep(.ant-menu-overflowed-submenu) {
+  display: none !important;
 }
 
 .user-login-status {

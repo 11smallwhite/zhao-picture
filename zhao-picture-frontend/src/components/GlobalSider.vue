@@ -20,10 +20,49 @@
         <a-menu
           mode="inline"
           v-model:selectedKeys="current"
-          :items="menuItems"
           @click="doMenuClick"
           class="side-menu"
-        />
+        >
+          <a-menu-item key="/">
+            <template #icon>
+              <PictureOutlined />
+            </template>
+            公共图库
+          </a-menu-item>
+          
+          <a-menu-item key="/my_space">
+            <template #icon>
+              <UserOutlined />
+            </template>
+            我的空间
+          </a-menu-item>
+          
+          <!-- 团队空间子菜单 -->
+          <a-sub-menu key="team_spaces">
+            <template #icon>
+              <UsergroupAddOutlined />
+            </template>
+            <template #title>团队空间</template>
+            
+            <!-- 动态生成的团队空间列表 -->
+            <a-menu-item 
+              v-for="space in teamSpaces" 
+              :key="`/team_space/${space.spaceId}`"
+            >
+              {{ space.spaceName }}
+            </a-menu-item>
+            
+            <!-- 加入空间和创建空间选项 -->
+            <a-menu-item key="/join_space" v-if="teamSpaces.length < 5">
+              <PlusOutlined />
+              加入空间
+            </a-menu-item>
+            <a-menu-item key="/create_space" v-if="teamSpaces.length < 5">
+              <PlusCircleOutlined />
+              创建空间
+            </a-menu-item>
+          </a-sub-menu>
+        </a-menu>
       </div>
     </a-layout-sider>
   </div>
@@ -31,35 +70,45 @@
 
 <script lang="ts" setup>
 import { useRouter } from "vue-router";
-import { h, ref } from "vue";
-import { PictureOutlined, UserOutlined, UsergroupAddOutlined } from "@ant-design/icons-vue";
+import { ref, onMounted } from "vue";
+import { 
+  PictureOutlined, 
+  UserOutlined, 
+  UsergroupAddOutlined,
+  PlusOutlined,
+  PlusCircleOutlined
+} from "@ant-design/icons-vue";
 import { useLoginUserStore } from "@/stores/user.ts";
+import { listMyTeamSpaceUsingPost } from "@/api/spaceUserController.ts";
 
 // 菜单列表
 const loginUserStore = useLoginUserStore();
-// 菜单列表
-const menuItems = [
-  {
-    key: '/',
-    label: '公共图库',
-    icon: () => h(PictureOutlined),
-  },
-  {
-    key: '/my_space',
-    label: '我的空间',
-    icon: () => h(UserOutlined),
-  },
-  {
-    key: '/team_space',
-    label: '团队空间',
-    icon: () => h(UsergroupAddOutlined),
-  },
-]
+// 团队空间列表
+const teamSpaces = ref<API.SpaceUserVO[]>([]);
 
 const router = useRouter()
 
 // 当前选中菜单
 const current = ref<string[]>([])
+
+// 获取用户加入的团队空间列表
+const fetchTeamSpaces = async () => {
+  try {
+    const res = await listMyTeamSpaceUsingPost();
+    if (res.data.code === 0 && res.data.data) {
+      // 限制最多显示5个团队空间
+      teamSpaces.value = res.data.data.slice(0, 5);
+    }
+  } catch (error) {
+    console.error("获取团队空间列表失败:", error);
+  }
+};
+
+// 页面加载时获取团队空间列表
+onMounted(() => {
+  fetchTeamSpaces();
+});
+
 // 监听路由变化，更新当前选中菜单
 router.afterEach((to, from, failure) => {
   // 智能路径匹配
@@ -68,16 +117,24 @@ router.afterEach((to, from, failure) => {
     current.value = ['/my_space'];
   } else {
     // 精确匹配其他路径
-    const matchedKey = menuItems.find(item => item.key === to.path)?.key;
-    current.value = matchedKey ? [matchedKey] : [];
+    current.value = [to.path];
   }
 })
 
 // 路由跳转事件
 const doMenuClick = ({ key }: { key: string }) => {
-  router.push({
-    path: key,
-  })
+  if (key === '/join_space') {
+    // 加入空间功能待开发，跳转到提示页面
+    router.push({ path: '/undeveloped' });
+  } else if (key === '/create_space') {
+    // 创建空间功能待开发，跳转到提示页面
+    router.push({ path: '/undeveloped' });
+  } else if (key.startsWith('/team_space/')) {
+    // 团队空间详情页面待开发，跳转到提示页面
+    router.push({ path: '/undeveloped' });
+  } else {
+    router.push({ path: key });
+  }
 }
 </script>
 
