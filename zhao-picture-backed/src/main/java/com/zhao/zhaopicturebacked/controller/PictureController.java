@@ -89,19 +89,20 @@ public class PictureController {
         if (createPictureOutPaintingTaskRequest == null || createPictureOutPaintingTaskRequest.getPictureId() == null) {
             throw new BusinessException(CodeEnum.PARAMES_ERROR);
         }
-        UserVO loginUser = TokenUtil.getLoginUserVOFromCookie(request);
-        CreateOutPaintingTaskResponse response = pictureService.createPictureOutPaintingTask(createPictureOutPaintingTaskRequest, loginUser);
+        Object attribute = request.getSession().getAttribute(UserConstant.USER_LOGIN_STORE);
+        UserVO loginUserVO = (UserVO) attribute;
+        CreateOutPaintingTaskResponse response = pictureService.createPictureOutPaintingTask(createPictureOutPaintingTaskRequest, loginUserVO);
 
         String taskId = response.getOutput().getTaskId();
         Task task = new Task();
         task.setTaskId(taskId);
         task.setTaskStatus(response.getOutput().getTaskStatus());
-        task.setUserId(loginUser.getId());
+        task.setUserId(loginUserVO.getId());
         boolean b = taskService.saveOrUpdate(task);
         if (!b){
             ThrowUtil.throwBusinessException(CodeEnum.SYSTEM_ERROR,"保存任务失败");
         }
-        Thread thread = new Thread(new AiPictureRunner(taskId,loginUser.getId()));
+        Thread thread = new Thread(new AiPictureRunner(taskId,loginUserVO.getId()));
         thread.start();
         log.info("线程{}执行AI扩图异步任务",thread.getId());
         return ResultUtil.success(response);
@@ -144,7 +145,8 @@ public class PictureController {
     @PostMapping("/upload")
     @AuthType(userType = UserConstant.USER)
     public BaseResponse<PictureVO> uploadPicture(@RequestPart("file") MultipartFile multipartFile, PictureUploadRequest pictureUploadRequest,HttpServletRequest request) {
-        UserVO loginUserVO = TokenUtil.getLoginUserVOFromCookie(request);
+        Object attribute = request.getSession().getAttribute(UserConstant.USER_LOGIN_STORE);
+        UserVO loginUserVO = (UserVO) attribute;
 
         Long userId = loginUserVO.getId();
 
@@ -167,7 +169,8 @@ public class PictureController {
     @PostMapping("/upload/url")
     @AuthType(userType = UserConstant.USER)
     public BaseResponse<PictureVO> uploadPictureByUrl(@RequestBody PictureUploadRequest pictureUploadRequest,HttpServletRequest request) {
-        UserVO loginUserVO = TokenUtil.getLoginUserVOFromCookie(request);
+        Object attribute = request.getSession().getAttribute(UserConstant.USER_LOGIN_STORE);
+        UserVO loginUserVO = (UserVO) attribute;
 
         Long userId = loginUserVO.getId();
 
@@ -186,8 +189,8 @@ public class PictureController {
     @AuthType(userType = UserConstant.ADMIN)
     public BaseResponse<Integer> uploadPictureByBatch(@RequestBody PictureUploadByBatchRequest pictureUploadByBatchRequest, HttpServletRequest request, HttpServletResponse response) {
 
-        UserVO loginUserVO = TokenUtil.getLoginUserVOFromCookie(request);
-
+        Object attribute = request.getSession().getAttribute(UserConstant.USER_LOGIN_STORE);
+        UserVO loginUserVO = (UserVO) attribute;
         int count = pictureService.uploadPictureByBatch(pictureUploadByBatchRequest, loginUserVO);
         return ResultUtil.success(count,"上传成功");
     }
@@ -203,7 +206,8 @@ public class PictureController {
     @PostMapping("/delete")
     @AuthType(userType = 0)
     public BaseResponse<Long> deletePictureById(@RequestBody DeleteRequest deleteRequest,HttpServletRequest request){
-        UserVO loginUserVO = TokenUtil.getLoginUserVOFromCookie(request);
+        Object attribute = request.getSession().getAttribute(UserConstant.USER_LOGIN_STORE);
+        UserVO loginUserVO = (UserVO) attribute;
         Long delete = pictureService.deletePicture(deleteRequest,loginUserVO);
         return ResultUtil.success(delete,"删除成功");
     }
@@ -275,9 +279,10 @@ public class PictureController {
             //如果没查到数据，就直接返回空列表,同时也将空列表缓存进redis和Caffeine，防止用户恶意访问不存在的数据,使得数据库压力变大
             List<Picture> pictureList = picturePage.getRecords();
             if(pictureList.size()==0 ){
-                log.info("缓存空值");
-                caffeienCacheStrategy.setCache(key,JSONUtil.toJsonStr(new Page<PictureVO>()));
-                redisCacheStrategy.setCache(key,JSONUtil.toJsonStr(new Page<PictureVO>()),60*15,TimeUnit.SECONDS);
+                //暂时先不缓存空值
+//                log.info("缓存空值");
+//                caffeienCacheStrategy.setCache(key,JSONUtil.toJsonStr(new Page<PictureVO>()));
+//                redisCacheStrategy.setCache(key,JSONUtil.toJsonStr(new Page<PictureVO>()),60*15,TimeUnit.SECONDS);
                 return ResultUtil.success(new Page<PictureVO>());
             }
             List<PictureVO> pictureVOList = pictureList.stream().map(picture ->pictureServiceImpl.getPictureVOByPicture(picture)).collect(Collectors.toList());
@@ -293,11 +298,11 @@ public class PictureController {
             pictureVOPage = new Page<>(picturePage.getCurrent(), picturePage.getSize(), picturePage.getTotal());
             pictureVOPage.setRecords(pictureVOList);
             //给Caffeine缓存数据
-//            cache = JSONUtil.toJsonStr(pictureVOPage);
-//            log.info("缓存数据");
-//            caffeienCacheStrategy.setCache(key, cache);
-//            //给redis设置缓存,并设置缓存过期时间
-//            redisCacheStrategy.setCache(key, cache, 60*60, TimeUnit.SECONDS);
+            cache = JSONUtil.toJsonStr(pictureVOPage);
+            log.info("缓存数据");
+            caffeienCacheStrategy.setCache(key, cache);
+            //给redis设置缓存,并设置缓存过期时间
+            redisCacheStrategy.setCache(key, cache, 60*60, TimeUnit.SECONDS);
 
         }catch (Exception e){
             log.error("分页查询图片数据失败",e);
@@ -391,7 +396,8 @@ public class PictureController {
     @PostMapping("/edit")
     @AuthType(userType = UserConstant.USER)
     public BaseResponse<PictureVO> editPicture(@RequestBody PictureEditRequest pictureEditRequest,HttpServletRequest request){
-        UserVO loginUserVO = TokenUtil.getLoginUserVOFromCookie(request);
+        Object attribute = request.getSession().getAttribute(UserConstant.USER_LOGIN_STORE);
+        UserVO loginUserVO = (UserVO) attribute;
         PictureVO pictureVO = pictureService.editPicture(pictureEditRequest, loginUserVO);
         return ResultUtil.success(pictureVO);
     }
@@ -418,7 +424,8 @@ public class PictureController {
     @PostMapping("/audit/admin")
     @AuthType(userType = UserConstant.ADMIN)
     public BaseResponse<Boolean> auditPicture(@RequestBody PictureAuditRequest pictureAuditRequest, HttpServletRequest request){
-        UserVO loginUserVO = TokenUtil.getLoginUserVOFromCookie(request);
+        Object attribute = request.getSession().getAttribute(UserConstant.USER_LOGIN_STORE);
+        UserVO loginUserVO = (UserVO) attribute;
         pictureService.auditPicture(pictureAuditRequest,loginUserVO);
         return ResultUtil.success(true);
     }

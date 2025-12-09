@@ -59,6 +59,12 @@ declare namespace API {
     message?: string;
   };
 
+  type BaseResponseListSpaceUserVO_ = {
+    code?: number;
+    data?: SpaceUserVO[];
+    message?: string;
+  };
+
   type BaseResponseLong_ = {
     code?: number;
     data?: number;
@@ -104,6 +110,12 @@ declare namespace API {
   type BaseResponseSpaceAnalyUsageResponse_ = {
     code?: number;
     data?: SpaceAnalyUsageResponse;
+    message?: string;
+  };
+
+  type BaseResponseSpaceUser_ = {
+    code?: number;
+    data?: SpaceUser;
     message?: string;
   };
 
@@ -158,6 +170,7 @@ declare namespace API {
     sortOrder?: string;
     spaceLevel?: number;
     spaceName?: string;
+    spaceType?: number;
     userId?: number;
   };
 
@@ -336,6 +349,7 @@ declare namespace API {
     maxSize?: number;
     spaceLevel?: number;
     spaceName?: string;
+    spaceType?: number;
     totalCount?: number;
     totalSize?: number;
     updateTime?: string;
@@ -345,6 +359,7 @@ declare namespace API {
   type SpaceAddRequest = {
     spaceLevel?: number;
     spaceName?: string;
+    spaceType?: number;
   };
 
   type SpaceAnalyCategoryResponse = {
@@ -404,6 +419,7 @@ declare namespace API {
     sortOrder?: string;
     spaceLevel?: number;
     spaceName?: string;
+    spaceType?: number;
     userId?: number;
   };
 
@@ -411,11 +427,55 @@ declare namespace API {
     topN?: number;
   };
 
+  type SpaceUser = {
+    createTime?: string;
+    id?: number;
+    spaceId?: number;
+    spaceRole?: string;
+    updateTime?: string;
+    userId?: number;
+  };
+
+  type SpaceUserAddRequest = {
+    spaceId?: number;
+    spaceRole?: string;
+    userId?: number;
+  };
+
   type SpaceUserAnalyzeRequest = {
     queryAll?: boolean;
     queryPublic?: boolean;
     spaceId?: number;
     timeDimension?: string;
+    userId?: number;
+  };
+
+  type SpaceUserDeleteRequest = {
+    spaceId?: number;
+    userId?: number;
+  };
+
+  type SpaceUserEditRequest = {
+    spaceId?: number;
+    spaceRole?: string;
+    userId?: number;
+  };
+
+  type SpaceUserQueryRequest = {
+    id?: number;
+    spaceId?: number;
+    spaceRole?: string;
+    userId?: number;
+  };
+
+  type SpaceUserVO = {
+    createTime?: string;
+    id?: number;
+    space?: SpaceVO;
+    spaceId?: number;
+    spaceRole?: string;
+    updateTime?: string;
+    user?: UserVO;
     userId?: number;
   };
 
@@ -427,6 +487,7 @@ declare namespace API {
     maxSize?: number;
     spaceLevel?: number;
     spaceName?: string;
+    spaceType?: number;
     totalCount?: number;
     totalSize?: number;
     updateTime?: string;

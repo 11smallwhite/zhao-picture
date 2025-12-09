@@ -7,8 +7,6 @@ export const SPACE_LEVEL_ENUM = {
 
 export const SPACE_LEVEL_MAP:Record<number, string> = {
   0: '普通版',
-  1: '专业版',
-  2: '旗舰版',
 };
 
 

@@ -5,10 +5,12 @@
 import * as pictureController from "./pictureController";
 import * as spaceController from "./spaceController";
 import * as spaceAnalyController from "./spaceAnalyController";
+import * as spaceUserController from "./spaceUserController";
 import * as userController from "./userController";
 export default {
   pictureController,
   spaceController,
   spaceAnalyController,
+  spaceUserController,
   userController,
 };

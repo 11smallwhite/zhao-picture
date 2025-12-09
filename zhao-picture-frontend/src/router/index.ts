@@ -1,4 +1,3 @@
-// ✅ 正确的写法
 import { createRouter, createWebHistory, type RouteRecordRaw } from "vue-router";
 import HomePage from "@/pages/HomePage.vue";
 import UserLoginPage from "@/pages/user/UserLoginPage.vue";
@@ -13,6 +12,8 @@ import AddSpacePage from "@/pages/space/AddSpacePage.vue";
 import MySpacePage from "@/pages/space/mySpacePage.vue";
 import SpaceDetailPage from "@/pages/space/SpaceDetailPage.vue";
 import SpaceAnalyPage from "@/components/SpaceAnalyPage.vue";
+import UserDetailPage from "@/pages/user/UserDetailPage.vue";
+import TeamSpacePage from "@/pages/space/TeamSpacePage.vue";
 
 const routes: Array<RouteRecordRaw >  = [
   {
@@ -36,6 +37,11 @@ const routes: Array<RouteRecordRaw >  = [
     path: '/user/register',
     name: '用户注册',
     component: UserRegisterPage
+  },
+  {
+    path: '/user/detail',
+    name: '用户信息',
+    component: UserDetailPage
   },
   {
     path: '/add_picture',
@@ -84,18 +90,17 @@ const routes: Array<RouteRecordRaw >  = [
     path: '/space_analyze',
     name: '空间分析',
     component: SpaceAnalyPage,
+  },
+  {
+    path: '/team_space',
+    name: '团队空间',
+    component: TeamSpacePage,
   }
-
-
-
 ]
-
 
 const router = createRouter({
   history: createWebHistory(),
   routes
 })
 
-
-// 确保有这一行！
 export default router

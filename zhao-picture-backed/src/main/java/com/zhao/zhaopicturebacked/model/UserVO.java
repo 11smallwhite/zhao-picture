@@ -2,15 +2,15 @@ package com.zhao.zhaopicturebacked.model;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
-import com.zhao.zhaopicturebacked.domain.SpaceUser;
 import com.zhao.zhaopicturebacked.domain.User;
 import lombok.Data;
 import org.springframework.beans.BeanUtils;
 
+import java.io.Serializable;
 import java.util.Date;
 
 @Data
-public class UserVO {
+public class UserVO implements Serializable {
 
     private static final long serialVersionUID = 1L;
     @JsonSerialize(using = ToStringSerializer.class)

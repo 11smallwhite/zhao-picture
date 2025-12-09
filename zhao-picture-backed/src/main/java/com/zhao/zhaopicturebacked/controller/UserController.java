@@ -6,6 +6,7 @@ import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.zhao.zhaopicturebacked.annotation.AuthType;
 import com.zhao.zhaopicturebacked.constant.BaseResponse;
+import com.zhao.zhaopicturebacked.constant.UserConstant;
 import com.zhao.zhaopicturebacked.domain.User;
 import com.zhao.zhaopicturebacked.enums.CodeEnum;
 import com.zhao.zhaopicturebacked.model.UserVO;
@@ -15,11 +16,13 @@ import com.zhao.zhaopicturebacked.request.user.UserLoginRequest;
 import com.zhao.zhaopicturebacked.request.user.UserQueryRequest;
 import com.zhao.zhaopicturebacked.request.user.UserRegisterRequest;
 import com.zhao.zhaopicturebacked.service.UserService;
+import com.zhao.zhaopicturebacked.upload.AvatarUploadService;
 import com.zhao.zhaopicturebacked.utils.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
@@ -34,6 +37,9 @@ public class UserController {
     private static final Logger log = LoggerFactory.getLogger(UserController.class);
     @Resource
     private UserService userService;
+    
+    @Resource
+    private AvatarUploadService avatarUploadService;
 
     @Resource
     private StringRedisTemplate stringRedisTemplate;
@@ -60,23 +66,13 @@ public class UserController {
      * @return
      */
     @PostMapping("/login")
-    public BaseResponse<UserVO> userLogin(@RequestBody UserLoginRequest userLoginRequest, HttpServletResponse response){
+    public BaseResponse<UserVO> userLogin(@RequestBody UserLoginRequest userLoginRequest, HttpServletRequest request, HttpServletResponse response){
 
         User user = userService.userLogin(userLoginRequest);
         UserVO loginUserVO = UserUtil.getUserVOByUser(user);
-        //1.获取token
-        String token = TokenUtil.getToken(user.getId(), user.getUserAccount(), user.getUserName());
-        //1.1删除旧的token
-        stringRedisTemplate.opsForValue().getAndDelete(token);
-        //2.将生成的token作为key，用户信息作为value，
-        try {
-            stringRedisTemplate.opsForValue().set(token, JSONUtil.toJsonStr(loginUserVO),60*60, TimeUnit.SECONDS);
-        }catch (Exception e){
-            log.warn("存储token到redis里失败了");
-            ThrowUtil.throwBusinessException(CodeEnum.NOT_AUTH,"存储token到redis里失败了");
-        }
-        //3.将token用Cookie形式返回给前端
-        TokenUtil.setTokenToCookie(token, response);
+        
+        // 使用Spring Session存储用户信息
+        request.getSession().setAttribute(UserConstant.USER_LOGIN_STORE, loginUserVO);
 
         log.info("用户登录成功：{}", loginUserVO);
         return ResultUtil.success(loginUserVO,"登录成功");
@@ -84,26 +80,14 @@ public class UserController {
 
     @GetMapping("/get")
     public BaseResponse<UserVO> getLoginUser(HttpServletRequest request,HttpServletResponse response){
-        //1.从请求的Cookie里拿到token
-        String token = TokenUtil.getTokenFromCookie(request);
-        if (ObjUtil.isEmpty(token)){
-            log.info("从请求的Cookie里没有拿到token或者token为null");
-            ThrowUtil.throwBusinessException(CodeEnum.NOT_AUTH,"从请求的Cookie里没有拿到token或者token为null");
+        // 从session中获取用户信息
+        UserVO loginUserVO = (UserVO) request.getSession().getAttribute(UserConstant.USER_LOGIN_STORE);
+        if (loginUserVO == null) {
+            log.info("用户未登录");
+            ThrowUtil.throwBusinessException(CodeEnum.NOT_AUTH,"用户未登录");
         }
-        //2.从redis里拿到用户信息
-        String loginUserVOJson = stringRedisTemplate.opsForValue().get(token);
-        if (ObjUtil.isEmpty(loginUserVOJson)){
-            log.info("从redis里没有找到用户信息,token已过期或未登录");
-            ThrowUtil.throwBusinessException(CodeEnum.NOT_AUTH,"loginUser为空");
-        }
-        //续期redis
-        stringRedisTemplate.expire(token,60*60, TimeUnit.SECONDS);
-        //续期cookie
-        TokenUtil.setTokenToCookie(token, response);
-        UserVO loginUserVO = JSONUtil.toBean(loginUserVOJson, UserVO.class);
 
         return ResultUtil.success(loginUserVO,"获取用户信息成功");
-
     }
 
 
@@ -114,11 +98,10 @@ public class UserController {
      */
     @PostMapping("/logout")
     public BaseResponse<Boolean> userLogout(HttpServletRequest request,HttpServletResponse response){
-        String token = TokenUtil.getTokenFromCookie(request);
-        //删除token
-        stringRedisTemplate.opsForValue().getAndDelete(token);
-        //删除Cookie
-        TokenUtil.setTokenToCookie(null, response);
+        //删除登录态
+        request.getSession().removeAttribute(UserConstant.USER_LOGIN_STORE);
+        // 使session失效
+        request.getSession().invalidate();
         return ResultUtil.success(true,"退出成功");
     }
 
@@ -131,11 +114,37 @@ public class UserController {
     @PostMapping("/edit")
     @AuthType(userType = 0)
     public BaseResponse<UserVO> userEdit(@RequestBody UserEditRequest userEditRequest, HttpServletRequest request){
-        UserVO loginUserVO = TokenUtil.getLoginUserVOFromCookie(request);
+
         //3.调用service层方法
         UserVO userVO = userService.userEdit(userEditRequest, request);
         return ResultUtil.success(userVO,"编辑成功");
     }
+    
+    /**
+     * 上传用户头像
+     * @param multipartFile 头像文件
+     * @param request 请求上下文
+     * @return 用户信息
+     */
+    @PostMapping("/avatar")
+    @AuthType(userType = 0)
+    public BaseResponse<UserVO> uploadAvatar(@RequestPart("file") MultipartFile multipartFile, HttpServletRequest request){
+        // 从session中获取当前登录用户
+        UserVO loginUserVO = (UserVO) request.getSession().getAttribute(UserConstant.USER_LOGIN_STORE);
+        if (ObjUtil.hasNull(loginUserVO, multipartFile)){
+            log.error("参数为空");
+            ThrowUtil.throwBusinessException(CodeEnum.PARAMES_ERROR,"参数为空");
+        }
+        
+        // 上传头像并更新用户信息
+        String avatarUrl = avatarUploadService.uploadAvatar(multipartFile, request);
+
+        // 重新获取更新后的用户信息
+        loginUserVO.setUserAvatar(avatarUrl);
+        request.getSession().setAttribute(UserConstant.USER_LOGIN_STORE, loginUserVO);
+        return ResultUtil.success(loginUserVO, "头像上传成功");
+    }
+
 
     /**
      * 分页查询用户----用户可用

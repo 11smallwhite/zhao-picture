@@ -17,7 +17,6 @@ import com.zhao.zhaopicturebacked.response.*;
 import com.zhao.zhaopicturebacked.service.PictureService;
 import com.zhao.zhaopicturebacked.service.SpaceService;
 import com.zhao.zhaopicturebacked.utils.ThrowUtil;
-import com.zhao.zhaopicturebacked.utils.TokenUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -233,18 +232,19 @@ public class SpaceAnalyServiceImpl {
 
 
     public void validSpaceAnaly(SpaceAnalyRequest spaceAnalyRequest, HttpServletRequest request){
-        UserVO loginUser = TokenUtil.getLoginUserVOFromCookie(request);
+        Object attribute = request.getSession().getAttribute(UserConstant.USER_LOGIN_STORE);
+        UserVO loginUserVO = (UserVO) attribute;
         Boolean isAll = spaceAnalyRequest.getQueryAll();
         Long spaceId = spaceAnalyRequest.getSpaceId();
         Boolean isPublic = spaceAnalyRequest.getQueryPublic();
         if(isAll||isPublic){
-            if(!loginUser.getUserType().equals(UserConstant.ADMIN)){
+            if(!loginUserVO.getUserType().equals(UserConstant.ADMIN)){
                 log.warn("无权限");
                 ThrowUtil.throwBusinessException(CodeEnum.NOT_AUTH,"权限不足");
             }
         }else if(spaceId!=null){
             Space space = spaceService.getById(spaceId);
-            spaceService.validSpaceAndUserVO(space,loginUser);
+            spaceService.validSpaceAndUserVO(space,loginUserVO);
         }
     }
     public QueryWrapper<Picture> fillSpaceAnaly(SpaceAnalyRequest spaceAnalyRequest,QueryWrapper<Picture> pictureQueryWrapper){

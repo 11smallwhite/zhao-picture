@@ -1,11 +1,13 @@
 package com.zhao.zhaopicturebacked.service.impl;
 
+import ch.qos.logback.core.joran.util.beans.BeanUtil;
 import cn.hutool.core.util.ObjUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.SecureUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.zhao.zhaopicturebacked.constant.UserConstant;
 import com.zhao.zhaopicturebacked.domain.User;
 import com.zhao.zhaopicturebacked.enums.CodeEnum;
 import com.zhao.zhaopicturebacked.model.UserVO;
@@ -17,9 +19,9 @@ import com.zhao.zhaopicturebacked.request.user.UserRegisterRequest;
 import com.zhao.zhaopicturebacked.service.UserService;
 import com.zhao.zhaopicturebacked.mapper.UserMapper;
 import com.zhao.zhaopicturebacked.utils.ThrowUtil;
-import com.zhao.zhaopicturebacked.utils.TokenUtil;
 import com.zhao.zhaopicturebacked.utils.UserUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 
 import javax.servlet.http.HttpServletRequest;
@@ -77,6 +79,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         User user = new User();
         user.setUserAccount(account);
         user.setUserPassword(encryptPassword);
+        user.setUserAvatar(UserConstant.DEFAULT_USER_AVATAR);
         user = UserUtil.fillUser(user);
         boolean save = this.save(user);
         if (!save){
@@ -117,31 +120,33 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
     @Override
     public UserVO userEdit(UserEditRequest userEditRequest, HttpServletRequest  request) {
-        UserVO loginUser = TokenUtil.getLoginUserVOFromCookie(request);
+        Object attribute = request.getSession().getAttribute(UserConstant.USER_LOGIN_STORE);
+        UserVO loginUserVO = (UserVO) attribute;
+        User user = new User();
+        BeanUtils.copyProperties(loginUserVO, user);
         Long id = userEditRequest.getId();
         String userName = userEditRequest.getUserName();
         String userIntroduction = userEditRequest.getUserIntroduction();
         String userAvatar = userEditRequest.getUserAvatar();
 
         //1.校验id是否为空
-        if (ObjUtil.isEmpty(id)){
-            log.info("id为空，无法更新");
-            ThrowUtil.throwBusinessException(CodeEnum.NULL,"id为空");
+        if (ObjUtil.isEmpty(id)||!loginUserVO.getId().equals(id)){
+            log.info("id为空或不相等");
+            ThrowUtil.throwBusinessException(CodeEnum.NULL,"id错误");
         }
 
         //2.校验id是否是当前用户
-        if (!id.equals(loginUser.getId())){
+        if (!id.equals(loginUserVO.getId())){
             log.info("id不是当前用户，无法更新");
             ThrowUtil.throwBusinessException(CodeEnum.NOT_AUTH,"id不是当前用户");
         }
 
         //3.更新值
-        User user = new User();
         user.setId(id);
         user.setUserName(userName);
         user.setUserIntroduction(userIntroduction);
         user.setUserAvatar(userAvatar);
-        user.setUserType(loginUser.getUserType());
+        user.setUserType(loginUserVO.getUserType());
         user.setEditTime(new Date());
         user = UserUtil.fillUser(user);
         boolean update = this.updateById(user);
@@ -150,6 +155,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
             ThrowUtil.throwBusinessException(CodeEnum.SYSTEM_ERROR,"用户信息更新失败");
         }
         UserVO userVO = UserUtil.getUserVOByUser(user);
+        request.getSession().setAttribute(UserConstant.USER_LOGIN_STORE,userVO);
         return userVO;
     }
 

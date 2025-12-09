@@ -30,7 +30,6 @@ import com.zhao.zhaopicturebacked.upload.FilePictureUpload;
 import com.zhao.zhaopicturebacked.upload.PictureUploadTemplate;
 import com.zhao.zhaopicturebacked.upload.UrlPictureUpload;
 import com.zhao.zhaopicturebacked.utils.ThrowUtil;
-import com.zhao.zhaopicturebacked.utils.TokenUtil;
 import com.zhao.zhaopicturebacked.utils.UserUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
@@ -47,6 +46,7 @@ import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.*;
 
 /**
  * @author Vip
@@ -67,7 +67,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
     @Resource
     private SpaceService spaceService;
 
-
+    private static final ExecutorService executor = Executors.newFixedThreadPool(10);
 
     @Resource
     private UrlPictureUpload urlPictureUpload;
@@ -199,9 +199,19 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
             ThrowUtil.throwBusinessException(CodeEnum.PARAMES_ERROR,"未找到图片标签");
         }
         Elements elements = elementByClass.select("img.mimg");
-        int countMax = 0;
-        //todo 这里能不能使用异步任务去优化呢？
+        //indx是保证上传图片的命名
+        int index = 0;
+        /*
+         * 增加信号量控制并发数，避免过多并发请求对服务器造成压力
+         * 最大并发数设为5，可根据实际情况调整
+         */
+        final int MAX_CONCURRENT = 5;
+        Semaphore semaphore = new Semaphore(MAX_CONCURRENT);
+        List<CompletableFuture<Boolean>> completableFutures = new ArrayList<>();
         for (Element element : elements){
+            if(index>=count){
+                break;
+            }
             String fileUrl = element.attr("src");
             if (fileUrl==null){
                 log.warn("图片url为空");
@@ -212,27 +222,43 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
             if(i>=0){
                 fileUrl = fileUrl.substring(0,i);
             }
+            final int pictureIndex = ++index;
+            String finalFileUrl = fileUrl;
+            CompletableFuture<Boolean> booleanCompletableFuture = CompletableFuture.supplyAsync(() -> {
+                try {
+                    semaphore.acquire();
+                    try {
+                        PictureUploadRequest pictureUploadRequest = new PictureUploadRequest();
+
+                        //根据URL路径上传图片
+                        String namePrefix = pictureUploadByBatchRequest.getNamePrefix();
+                        pictureUploadRequest.setPicName(namePrefix + (pictureIndex));
+                        PictureVO pictureVO = this.uploadPicture(finalFileUrl, pictureUploadRequest, loginUserVO);
+                        log.info("爬取图片成功上传:{}", pictureVO);
+                        return true;
+                    }finally {
+                        semaphore.release();
+                    }
+                } catch (Exception e) {
+                    log.warn("图片爬取失败:{}", finalFileUrl);
+                    return false;
+                }
+            }, executor);
+            completableFutures.add(booleanCompletableFuture);
+        }
+        //使用maxCount来收集成功了几张照片
+        int successCount=0;
+        for (CompletableFuture<Boolean> completableFuture : completableFutures){
             try {
-                PictureUploadRequest pictureUploadRequest = new PictureUploadRequest();
-
-                //根据URL路径上传图片
-                String namePrefix = pictureUploadByBatchRequest.getNamePrefix();
-                pictureUploadRequest.setPicName(namePrefix+(countMax+1));
-                PictureVO pictureVO = this.uploadPicture(fileUrl, pictureUploadRequest, loginUserVO);
-                log.info("爬取图片成功上传:{}", pictureVO);
-                countMax++;
-
+                if (completableFuture.get()&&successCount< count) {
+                    successCount++;
+                }
             }catch (Exception e){
-                log.error("图片爬取失败:{}",fileUrl);
-                continue;
+                log.warn("获取任务结果失败",e);
             }
-            if(countMax>=count){
-                break;
-            }
-
         }
 
-        return countMax;
+        return successCount;
     }
 
     /**
@@ -337,7 +363,8 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         }
         //校验空间和用户的关系
         Space space = spaceService.getById(spaceId);
-        UserVO loginUserVO = TokenUtil.getLoginUserVOFromCookie(request);
+        Object attribute = request.getSession().getAttribute(UserConstant.USER_LOGIN_STORE);
+        UserVO loginUserVO = (UserVO) attribute;
         spaceService.validSpaceAndUserVO(space,loginUserVO);
         QueryWrapper<Picture> pictureQueryWrapper = getQueryWrapperFromQueryRequest(pictureQueryRequest);
         Page<Picture> picturePage = this.page(new Page<>(pageNum, pageSize), pictureQueryWrapper);

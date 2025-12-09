@@ -20,7 +20,6 @@ export const useLoginUserStore = defineStore("loginUser", () => {
     if (res.data.code === 0 && res.data.data) {
       loginUser.value = res.data.data;
     }
-
   }
 
 

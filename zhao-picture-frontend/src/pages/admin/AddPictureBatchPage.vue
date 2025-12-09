@@ -40,16 +40,28 @@ const loading = ref(false);
 
 const handleSubmit = async(values:any)=>{
   loading.value = true;
-  const res = await uploadPictureByBatchUsingPost({
-    ...formData,
-  })
-  if(res.data.code === 0&&res.data.data){
-    message.success(`抓取图片成功，共${res.data.data}条`);
-    router.push({
-      path: '/',
+  try {
+    // 设置更长的超时时间，因为批量处理可能需要更多时间
+    const res = await uploadPictureByBatchUsingPost({
+      ...formData,
+    }, {
+      timeout: 60000 // 设置超时时间为60秒
     })
-  }else{
-    message.error('抓取图片失败'+res.data.message);
+    if(res.data.code === 0&&res.data.data){
+      message.success(`抓取图片成功，共${res.data.data}条`);
+      router.push({
+        path: '/',
+      })
+    }else{
+      message.error('抓取图片失败'+res.data.message);
+    }
+  } catch (error) {
+    // 检查是否是超时错误
+    if (error.code === 'ECONNABORTED') {
+      message.error('请求超时，请稍后重试或减少抓取数量');
+    } else {
+      message.error('抓取图片失败: ' + error.message);
+    }
   }
   loading.value = false;
 }

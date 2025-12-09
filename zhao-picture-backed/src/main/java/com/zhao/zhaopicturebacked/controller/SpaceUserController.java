@@ -16,7 +16,6 @@ import com.zhao.zhaopicturebacked.service.SpaceUserService;
 import com.zhao.zhaopicturebacked.service.UserService;
 import com.zhao.zhaopicturebacked.utils.ResultUtil;
 import com.zhao.zhaopicturebacked.utils.ThrowUtil;
-import com.zhao.zhaopicturebacked.utils.TokenUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -49,7 +48,8 @@ public class SpaceUserController {
             ThrowUtil.throwBusinessException(CodeEnum.PARAMES_ERROR,"参数为空");
         }
         //校验是否是空间管理员
-        UserVO loginUserVO = TokenUtil.getLoginUserVOFromCookie(request);
+        Object attribute = request.getSession().getAttribute(UserConstant.USER_LOGIN_STORE);
+        UserVO loginUserVO = (UserVO) attribute;
         Long userId = loginUserVO.getId();
         Long spaceId = spaceUserAddRequest.getSpaceId();
         spaceUserService.validSpaceUserAdmin(userId,spaceId);
@@ -72,7 +72,8 @@ public class SpaceUserController {
             ThrowUtil.throwBusinessException(CodeEnum.PARAMES_ERROR,"参数为空");
         }
         //校验是否是空间管理员
-        UserVO loginUserVO = TokenUtil.getLoginUserVOFromCookie(request);
+        Object attribute = request.getSession().getAttribute(UserConstant.USER_LOGIN_STORE);
+        UserVO loginUserVO = (UserVO) attribute;
         Long userId = loginUserVO.getId();
         Long spaceId = spaceUserDeleteRequest.getSpaceId();
         spaceUserService.validSpaceUserAdmin(userId,spaceId);
@@ -93,7 +94,8 @@ public class SpaceUserController {
             ThrowUtil.throwBusinessException(CodeEnum.PARAMES_ERROR,"参数为空");
         }
         //校验是否是空间管理员
-        UserVO loginUserVO = TokenUtil.getLoginUserVOFromCookie(request);
+        Object attribute = request.getSession().getAttribute(UserConstant.USER_LOGIN_STORE);
+        UserVO loginUserVO = (UserVO) attribute;
         Long userId = loginUserVO.getId();
         Long spaceId = spaceUserQueryRequest.getSpaceId();
         spaceUserService.validSpaceUserAdmin(userId,spaceId);
@@ -114,7 +116,8 @@ public class SpaceUserController {
             ThrowUtil.throwBusinessException(CodeEnum.PARAMES_ERROR,"参数为空");
         }
         //校验是否是空间管理员
-        UserVO loginUserVO = TokenUtil.getLoginUserVOFromCookie(request);
+        Object attribute = request.getSession().getAttribute(UserConstant.USER_LOGIN_STORE);
+        UserVO loginUserVO = (UserVO) attribute;
         Long userId = loginUserVO.getId();
         Long spaceId = spaceUserQueryRequest.getSpaceId();
         spaceUserService.validSpaceUserAdmin(userId,spaceId);
@@ -137,7 +140,8 @@ public class SpaceUserController {
             ThrowUtil.throwBusinessException(CodeEnum.PARAMES_ERROR,"参数为空");
         }
         //校验是否是空间管理员
-        UserVO loginUserVO = TokenUtil.getLoginUserVOFromCookie(request);
+        Object attribute = request.getSession().getAttribute(UserConstant.USER_LOGIN_STORE);
+        UserVO loginUserVO = (UserVO) attribute;
         Long userId = loginUserVO.getId();
         Long spaceId = spaceUserEditRequest.getSpaceId();
         spaceUserService.validSpaceUserAdmin(userId,spaceId);

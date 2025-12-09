@@ -111,6 +111,13 @@ const pagination = computed(() => {
   };
 });
 
+// 分页变化时触发
+const onPageChange = (page, pageSize) => {
+  searchParams.pageNum = page;
+  searchParams.pageSize = pageSize;
+  fetchData();
+};
+
 // 获取数据
 const fetchData = async () => {
   loading.value = true

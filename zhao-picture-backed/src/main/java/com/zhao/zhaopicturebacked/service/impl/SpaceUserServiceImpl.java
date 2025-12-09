@@ -4,12 +4,12 @@ import cn.hutool.core.util.ObjUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 
+import com.zhao.zhaopicturebacked.constant.UserConstant;
 import com.zhao.zhaopicturebacked.domain.Space;
 import com.zhao.zhaopicturebacked.domain.SpaceUser;
 import com.zhao.zhaopicturebacked.domain.User;
 import com.zhao.zhaopicturebacked.enums.CodeEnum;
 import com.zhao.zhaopicturebacked.enums.SpaceRoleEnum;
-import com.zhao.zhaopicturebacked.enums.SpaceTypeEnum;
 import com.zhao.zhaopicturebacked.model.SpaceUserVO;
 import com.zhao.zhaopicturebacked.model.SpaceVO;
 import com.zhao.zhaopicturebacked.model.UserVO;
@@ -24,7 +24,6 @@ import com.zhao.zhaopicturebacked.service.SpaceUserService;
 import com.zhao.zhaopicturebacked.mapper.SpaceUserMapper;
 import com.zhao.zhaopicturebacked.service.UserService;
 import com.zhao.zhaopicturebacked.utils.ThrowUtil;
-import com.zhao.zhaopicturebacked.utils.TokenUtil;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -147,7 +146,8 @@ public class SpaceUserServiceImpl extends ServiceImpl<SpaceUserMapper, SpaceUser
 
     @Override
     public List<SpaceUserVO> selectMySpaceUser(HttpServletRequest request) {
-        UserVO loginUserVO = TokenUtil.getLoginUserVOFromCookie(request);
+        Object attribute = request.getSession().getAttribute(UserConstant.USER_LOGIN_STORE);
+        UserVO loginUserVO = (UserVO) attribute;
         SpaceUserQueryRequest spaceUserQueryRequest = new SpaceUserQueryRequest();
         spaceUserQueryRequest.setUserId(loginUserVO.getId());
         QueryWrapper<SpaceUser> spaceUserQueryWrapper  = getSpaceUserQueryWrapper(spaceUserQueryRequest);

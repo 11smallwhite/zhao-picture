@@ -17,5 +17,8 @@ import BasicLayout from "@/layouts/BasicLayout.vue";
 
 
 <style scoped>
-
+#app {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e4edf9 100%);
+}
 </style>

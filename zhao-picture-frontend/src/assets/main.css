@@ -1,35 +1,105 @@
 @import './base.css';
 
 #app {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
   font-weight: normal;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e4edf9 100%);
 }
 
 a,
 .green {
   text-decoration: none;
-  color: hsla(160, 100%, 37%, 1);
+  color: #645bff;
   transition: 0.4s;
   padding: 3px;
 }
 
 @media (hover: hover) {
   a:hover {
-    background-color: hsla(160, 100%, 37%, 0.2);
+    color: #8a85ff;
+    background-color: rgba(100, 91, 255, 0.1);
   }
 }
 
-@media (min-width: 1024px) {
-  body {
-    display: flex;
-    place-items: center;
-  }
+/* 页面标题样式 */
+.page-title {
+  font-size: 24px;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 24px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e8e8e8;
+}
 
-  #app {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    padding: 0 2rem;
+/* 卡片样式增强 */
+.ant-card {
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.09);
+  transition: all 0.3s ease;
+}
+
+.ant-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+}
+
+/* 表格样式增强 */
+.ant-table-wrapper {
+  background: #fff;
+  padding: 16px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.09);
+}
+
+/* 按钮样式增强 */
+.ant-btn-primary {
+  background: linear-gradient(45deg, #645bff, #8a85ff);
+  border-color: #645bff;
+  box-shadow: 0 2px 4px rgba(100, 91, 255, 0.3);
+}
+
+.ant-btn-primary:hover, .ant-btn-primary:focus {
+  background: linear-gradient(45deg, #8a85ff, #645bff);
+  border-color: #8a85ff;
+  box-shadow: 0 4px 8px rgba(100, 91, 255, 0.4);
+}
+
+/* 表单样式增强 */
+.ant-form-item-label > label {
+  font-weight: 500;
+  color: #555;
+}
+
+/* 输入框样式增强 */
+.ant-input, .ant-input-affix-wrapper {
+  border-radius: 6px;
+  transition: all 0.3s ease;
+}
+
+.ant-input:hover, .ant-input-affix-wrapper:hover {
+  border-color: #8a85ff;
+  box-shadow: 0 0 0 2px rgba(100, 91, 255, 0.2);
+}
+
+/* 加载动画 */
+.loading-spin {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+}
+
+/* 响应式设计优化 */
+@media (max-width: 768px) {
+  .ant-card {
+    margin-bottom: 16px;
+  }
+  
+  .page-title {
+    font-size: 20px;
+    margin-bottom: 16px;
   }
 }

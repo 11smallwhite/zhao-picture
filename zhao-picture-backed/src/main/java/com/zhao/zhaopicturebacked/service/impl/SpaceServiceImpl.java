@@ -5,6 +5,7 @@ import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.zhao.zhaopicturebacked.constant.UserConstant;
 import com.zhao.zhaopicturebacked.domain.Picture;
 import com.zhao.zhaopicturebacked.domain.Space;
 import com.zhao.zhaopicturebacked.domain.SpaceUser;
@@ -23,7 +24,6 @@ import com.zhao.zhaopicturebacked.mapper.SpaceMapper;
 // import com.zhao.zhaopicturebacked.service.SpaceUserService;
 import com.zhao.zhaopicturebacked.service.SpaceUserService;
 import com.zhao.zhaopicturebacked.utils.ThrowUtil;
-import com.zhao.zhaopicturebacked.utils.TokenUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
@@ -67,7 +67,8 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space>
     private final ConcurrentHashMap<String, Object> lockHashMap = new ConcurrentHashMap<>();
     @Override
     public Long addSpace(SpaceAddRequest spaceAddRequest, HttpServletRequest request) {
-        UserVO loginUserVO = TokenUtil.getLoginUserVOFromCookie(request);
+        Object attribute = request.getSession().getAttribute(UserConstant.USER_LOGIN_STORE);
+        UserVO loginUserVO = (UserVO) attribute;
         String spaceName = spaceAddRequest.getSpaceName();
         final int spaceLevel = spaceAddRequest.getSpaceLevel();
 
@@ -169,7 +170,8 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space>
         space.setSpaceLevel(spaceLevel);
         validSpace(space,false);
         //校验是不是空间创建者
-        UserVO loginUserVO = TokenUtil.getLoginUserVOFromCookie(request);
+        Object attribute = request.getSession().getAttribute(UserConstant.USER_LOGIN_STORE);
+        UserVO loginUserVO = (UserVO) attribute;
         Space oldSpace = this.getById(id);
         if(ObjUtil.isEmpty(oldSpace)){
             log.warn("用户没有权限修改空间");
@@ -196,7 +198,8 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space>
     @Override
     public Long deleteSpaceById(DeleteRequest deleteRequest, HttpServletRequest request) {
         Long id = deleteRequest.getId();
-        UserVO loginUserVO = TokenUtil.getLoginUserVOFromCookie(request);
+        Object attribute = request.getSession().getAttribute(UserConstant.USER_LOGIN_STORE);
+        UserVO loginUserVO = (UserVO) attribute;
         //1.校验id
         if (ObjUtil.isEmpty(id)){
             log.warn("id参数为空");

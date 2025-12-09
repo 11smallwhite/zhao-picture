@@ -1,5 +1,3 @@
-
-
 import { createApp } from 'vue'
 import App from './App.vue'
 import Antd from 'ant-design-vue'
@@ -9,7 +7,6 @@ import {createPinia} from 'pinia'
 import '@/access'
 import VueCropper from 'vue-cropper';
 import 'vue-cropper/dist/index.css'
-
 
 const pinia = createPinia()
 createApp(App)
